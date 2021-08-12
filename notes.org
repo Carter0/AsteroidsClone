@@ -1,0 +1,20 @@
+#+TITLE: Bevy Asteroids
+
+This is an Asteroids clone in Bevy. It's purpose is to get me familiar with game development using Bevy.
+
+
+My starting ideas are that this game is gonna need...
+
+1. A player with
+   - x and y movement, can be both at the same time
+   - shooting mechanics
+   - collision mechanics
+   - death (I would gie 3 lives)
+2. Asteroids that can
+   - move
+   - die
+   - kill the player
+3. Some Other Systems include
+   - spawning asteroids
+   - having boundaries for the player
+   - incrementing the score over time as the player shoots asteroids
