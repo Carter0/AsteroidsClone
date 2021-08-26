@@ -1,5 +1,5 @@
 [package]
-name = "bevy_asteroids"
+name = "bevy_block_game"
 version = "0.1.0"
 authors = ["carter <weinbergcarter@gmail.com>"]
 edition = "2018"

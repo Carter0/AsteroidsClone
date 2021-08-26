@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 const WINDOWHEIGHT: f32 = 900.0;
-const WINDOWWIDTH: f32 = 500.0;
+const WINDOWWIDTH: f32 = 700.0;
 
 fn main() {
     App::build()
@@ -28,6 +28,7 @@ fn add_camera(mut commands: Commands) {
 // The float value is the player movement speed in 'pixels/second'.
 struct Player {
     velocity: f32,
+    teleport_distance: f32
 }
 
 fn spawn_player(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
@@ -41,14 +42,14 @@ fn spawn_player(mut commands: Commands, mut materials: ResMut<Assets<ColorMateri
             sprite: Sprite::new(Vec2::new(sprite_size_x, sprite_size_y)),
             ..Default::default()
         })
-        .insert(Player { velocity: 10.0 });
+        .insert(Player { velocity: 10.0, teleport_distance: 70.0 });
 }
 
 fn move_player(
     keyboard_input: Res<Input<KeyCode>>,
-    mut player_query: Query<(&Player, &mut Transform)>,
+    mut player_query: Query<(&Player, &mut Transform, &Sprite)>,
 ) {
-    let (player, mut transform) = player_query
+    let (player, mut transform, sprite) = player_query
         .single_mut()
         .expect("There should always be exactly one player in the game!");
 
@@ -63,6 +64,46 @@ fn move_player(
     let y_axis: i8 = -(down as i8) + up as i8;
     let move_delta: Vec2 = Vec2::new(x_axis as f32, y_axis as f32);
 
+    // move the player
     transform.translation.x += move_delta.x * player.velocity;
     transform.translation.y += move_delta.y * player.velocity;
+
+    // Wrap the player if they go off screen
+    if transform.translation.x > WINDOWWIDTH/2.0 + sprite.size.x {
+        transform.translation.x = -WINDOWWIDTH/2.0;
+    }
+
+    if transform.translation.x < -WINDOWWIDTH/2.0 - sprite.size.x{
+        transform.translation.x = WINDOWWIDTH/2.0;
+    }
+
+    if transform.translation.y > WINDOWHEIGHT/2.0 + sprite.size.y {
+        transform.translation.y = -WINDOWHEIGHT/2.0;
+    }
+
+    if transform.translation.y < -WINDOWHEIGHT/2.0 - sprite.size.y {
+        transform.translation.y = WINDOWHEIGHT/2.0;
+    }
+
+    // TODO refactor so that diagonal teleporting works
+    if keyboard_input.just_pressed(KeyCode::Space) {
+        if move_delta.y == -1.0 {
+            transform.translation.y -= player.teleport_distance;
+        }
+
+        if move_delta.y == 1.0 {
+            transform.translation.y += player.teleport_distance;
+        }
+
+        if move_delta.x == 1.0 {
+            transform.translation.x += player.teleport_distance;
+        }
+
+        if move_delta.x == -1.0 {
+            transform.translation.x -= player.teleport_distance;
+        }
+
+        // move the player forward some amount by the direction they are currently moving
+        // need  a direction variable
+    }
 }
