@@ -15,6 +15,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_startup_system(add_camera.system())
         .add_startup_system(spawn_player.system())
+        .add_startup_system(spawn_block.system())
         .add_system(move_player.system())
         .run();
 }
@@ -28,7 +29,7 @@ fn add_camera(mut commands: Commands) {
 // The float value is the player movement speed in 'pixels/second'.
 struct Player {
     velocity: f32,
-    teleport_distance: f32
+    teleport_distance: f32,
 }
 
 fn spawn_player(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
@@ -42,7 +43,10 @@ fn spawn_player(mut commands: Commands, mut materials: ResMut<Assets<ColorMateri
             sprite: Sprite::new(Vec2::new(sprite_size_x, sprite_size_y)),
             ..Default::default()
         })
-        .insert(Player { velocity: 10.0, teleport_distance: 70.0 });
+        .insert(Player {
+            velocity: 10.0,
+            teleport_distance: 70.0,
+        });
 }
 
 fn move_player(
@@ -69,23 +73,23 @@ fn move_player(
     transform.translation.y += move_delta.y * player.velocity;
 
     // Wrap the player if they go off screen
-    if transform.translation.x > WINDOWWIDTH/2.0 + sprite.size.x {
-        transform.translation.x = -WINDOWWIDTH/2.0;
+    if transform.translation.x > WINDOWWIDTH / 2.0 + sprite.size.x {
+        transform.translation.x = -WINDOWWIDTH / 2.0;
     }
 
-    if transform.translation.x < -WINDOWWIDTH/2.0 - sprite.size.x{
-        transform.translation.x = WINDOWWIDTH/2.0;
+    if transform.translation.x < -WINDOWWIDTH / 2.0 - sprite.size.x {
+        transform.translation.x = WINDOWWIDTH / 2.0;
     }
 
-    if transform.translation.y > WINDOWHEIGHT/2.0 + sprite.size.y {
-        transform.translation.y = -WINDOWHEIGHT/2.0;
+    if transform.translation.y > WINDOWHEIGHT / 2.0 + sprite.size.y {
+        transform.translation.y = -WINDOWHEIGHT / 2.0;
     }
 
-    if transform.translation.y < -WINDOWHEIGHT/2.0 - sprite.size.y {
-        transform.translation.y = WINDOWHEIGHT/2.0;
+    if transform.translation.y < -WINDOWHEIGHT / 2.0 - sprite.size.y {
+        transform.translation.y = WINDOWHEIGHT / 2.0;
     }
 
-    // TODO refactor so that diagonal teleporting works
+    // teleport the player if they press space
     if keyboard_input.just_pressed(KeyCode::Space) {
         if move_delta.y == -1.0 {
             transform.translation.y -= player.teleport_distance;
@@ -102,8 +106,25 @@ fn move_player(
         if move_delta.x == -1.0 {
             transform.translation.x -= player.teleport_distance;
         }
-
-        // move the player forward some amount by the direction they are currently moving
-        // need  a direction variable
     }
+}
+
+// Block Code
+
+struct Block {
+    velocity: f32,
+}
+
+fn spawn_block(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
+    let sprite_size_x = 80.0;
+    let sprite_size_y = 80.0;
+
+    commands
+        .spawn_bundle(SpriteBundle {
+            material: materials.add(Color::rgb(1.0, 0.5, 1.0).into()),
+            transform: Transform::from_xyz(0.0, 0.0, 1.0),
+            sprite: Sprite::new(Vec2::new(sprite_size_x, sprite_size_y)),
+            ..Default::default()
+        })
+        .insert(Block { velocity: 10.0 });
 }
