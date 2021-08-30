@@ -52,7 +52,7 @@ fn spawn_player(mut commands: Commands, mut materials: ResMut<Assets<ColorMateri
             ..Default::default()
         })
         .insert(Player {
-            velocity: 10.0,
+            velocity: 300.0,
             teleport_distance: 70.0,
         })
         .insert(Collidable);
@@ -61,8 +61,10 @@ fn spawn_player(mut commands: Commands, mut materials: ResMut<Assets<ColorMateri
 fn move_player(
     keyboard_input: Res<Input<KeyCode>>,
     mut player_query: Query<(&Player, &mut Transform, &Sprite)>,
+    time: Res<Time>
 ) {
     if let Ok((player, mut transform, sprite)) = player_query.single_mut() {
+
         // Get input from the keyboard (WASD)
         let up: bool = keyboard_input.pressed(KeyCode::W) || keyboard_input.pressed(KeyCode::Up);
         let down: bool =
@@ -78,9 +80,9 @@ fn move_player(
         let move_delta: Vec2 = Vec2::new(x_axis as f32, y_axis as f32);
 
         // move the player
-        // TODO add delta time!
-        transform.translation.x += move_delta.x * player.velocity;
-        transform.translation.y += move_delta.y * player.velocity;
+        let delta_time = time.delta_seconds();
+        transform.translation.x += move_delta.x * player.velocity * delta_time;
+        transform.translation.y += move_delta.y * player.velocity * delta_time;
 
         // Wrap the player if they go off screen
         if transform.translation.x > WINDOWWIDTH / 2.0 + sprite.size.x {
@@ -120,7 +122,7 @@ fn move_player(
     }
 }
 
-// # NOTE simple, player collides with block system
+// simple, player collides with block system
 fn player_collision_system(
     mut commands: Commands,
     mut player_query: Query<(Entity, &Sprite, &Transform), With<Player>>,
@@ -177,7 +179,7 @@ fn spawn_block(mut commands: Commands, mut materials: ResMut<Assets<ColorMateria
     let mut counter = 0;
     let mut rng = thread_rng();
 
-    let block_number = 6;
+    let block_number = 20;
     while counter < block_number {
         let rand_direction: Direction = rand::random();
         let x_starting_position = rng.gen_range(0.0..=WINDOWWIDTH);
@@ -191,7 +193,7 @@ fn spawn_block(mut commands: Commands, mut materials: ResMut<Assets<ColorMateria
                 ..Default::default()
             })
             .insert(Block {
-                velocity: 10.0,
+                velocity: 300.0,
                 direction: rand_direction,
             })
             .insert(Collidable);
@@ -200,15 +202,15 @@ fn spawn_block(mut commands: Commands, mut materials: ResMut<Assets<ColorMateria
     }
 }
 
-// TODO blocks need to use delta time!
-fn move_blocks(mut block_query: Query<(&Block, &mut Transform, &Sprite)>) {
-    // move the block by its own velocity
+// move the block by its own velocity
+fn move_blocks(mut block_query: Query<(&Block, &mut Transform, &Sprite)>, time: Res<Time>) {
     for (block, mut transform, sprite) in block_query.iter_mut() {
+        let block_speed = block.velocity * time.delta_seconds();
         match &block.direction {
-            Direction::Left => transform.translation.x -= block.velocity,
-            Direction::Right => transform.translation.x += block.velocity,
-            Direction::Up => transform.translation.y += block.velocity,
-            Direction::Down => transform.translation.y -= block.velocity,
+            Direction::Left => transform.translation.x -= block_speed,
+            Direction::Right => transform.translation.x += block_speed,
+            Direction::Up => transform.translation.y += block_speed,
+            Direction::Down => transform.translation.y -= block_speed,
         };
 
         // Wrap the block if they go off screen
