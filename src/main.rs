@@ -1,9 +1,13 @@
-use bevy::{prelude::*, sprite::collide_aabb::collide};
+use bevy::{prelude::*, sprite::collide_aabb::collide, core::FixedTimestep};
+
 use rand::distributions::{Distribution, Standard};
 use rand::{thread_rng, Rng};
 
 const WINDOWHEIGHT: f32 = 900.0;
 const WINDOWWIDTH: f32 = 1000.0;
+
+// For BLOCK_SPAWN_TIMESTEP, it's once every two seconds
+const BLOCK_SPAWN_TIMESTEP: f64 = 120.0 / 60.0;
 
 fn main() {
     App::build()
@@ -17,7 +21,13 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_startup_system(add_camera.system())
         .add_startup_system(spawn_player.system())
-        .add_startup_system(spawn_block.system())
+        .add_startup_system(spawn_starting_block.system())
+        .add_system_set(
+            SystemSet::new()
+                // This prints out "goodbye world" twice every second
+                .with_run_criteria(FixedTimestep::step(BLOCK_SPAWN_TIMESTEP))
+                .with_system(spawn_runtime_blocks.system()),
+        )
         .add_system(move_player.system())
         .add_system(move_blocks.system())
         .add_system(player_collision_system.system())
@@ -29,6 +39,9 @@ fn add_camera(mut commands: Commands) {
 }
 
 // Overall Info
+struct Game {
+    blocks : Vec<Block>
+}
 
 struct Collidable;
 
@@ -61,10 +74,9 @@ fn spawn_player(mut commands: Commands, mut materials: ResMut<Assets<ColorMateri
 fn move_player(
     keyboard_input: Res<Input<KeyCode>>,
     mut player_query: Query<(&Player, &mut Transform, &Sprite)>,
-    time: Res<Time>
+    time: Res<Time>,
 ) {
     if let Ok((player, mut transform, sprite)) = player_query.single_mut() {
-
         // Get input from the keyboard (WASD)
         let up: bool = keyboard_input.pressed(KeyCode::W) || keyboard_input.pressed(KeyCode::Up);
         let down: bool =
@@ -172,34 +184,44 @@ struct Block {
     direction: Direction,
 }
 
-fn spawn_block(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
-    let sprite_size_x = 80.0;
-    let sprite_size_y = 80.0;
+fn spawn_starting_block(commands: Commands, materials: ResMut<Assets<ColorMaterial>>) {
 
     let mut counter = 0;
-    let mut rng = thread_rng();
 
     let block_number = 20;
     while counter < block_number {
-        let rand_direction: Direction = rand::random();
-        let x_starting_position = rng.gen_range(0.0..=WINDOWWIDTH);
-        let y_starting_position = rng.gen_range(0.0..=WINDOWHEIGHT);
-
-        commands
-            .spawn_bundle(SpriteBundle {
-                material: materials.add(Color::rgb(1.0, 0.5, 1.0).into()),
-                transform: Transform::from_xyz(x_starting_position, y_starting_position, 1.0),
-                sprite: Sprite::new(Vec2::new(sprite_size_x, sprite_size_y)),
-                ..Default::default()
-            })
-            .insert(Block {
-                velocity: 300.0,
-                direction: rand_direction,
-            })
-            .insert(Collidable);
-
+        spawn_block(commands, materials, Color::rgb(1.0, 0.5, 1.0));
         counter += 1;
     }
+}
+
+// spawns blocks as a way to make the game harder during runtime
+// this will only run every spawn block timestep
+fn spawn_runtime_blocks(commands: Commands,
+                        materials: ResMut<Assets<ColorMaterial>>) {
+    spawn_block(commands, materials, Color::rgb(0.2, 0.5, 1.0))
+}
+
+fn spawn_block(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>, color : Color) {
+    let mut rng = thread_rng();
+    let rand_direction: Direction = rand::random();
+    let x_starting_position = rng.gen_range(0.0..=WINDOWWIDTH);
+    let y_starting_position = rng.gen_range(0.0..=WINDOWHEIGHT);
+    let sprite_size_x = 80.0;
+    let sprite_size_y = 80.0;
+
+    commands
+        .spawn_bundle(SpriteBundle {
+            material: materials.add(color.into()),
+            transform: Transform::from_xyz(x_starting_position, y_starting_position, 1.0),
+            sprite: Sprite::new(Vec2::new(sprite_size_x, sprite_size_y)),
+            ..Default::default()
+        })
+        .insert(Block {
+            velocity: 300.0,
+            direction: rand_direction,
+        })
+        .insert(Collidable);
 }
 
 // move the block by its own velocity
