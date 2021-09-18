@@ -25,10 +25,7 @@ fn main() {
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
-        .add_startup_system(add_camera.system())
-        .add_startup_system(spawn_player.system())
-        .add_startup_system(spawn_starting_block.system())
-        .add_startup_system(render_score.system())
+        .add_startup_system(setup.system())
         .add_system_set(
             SystemSet::new()
                 // This prints out "goodbye world" twice every second
@@ -44,9 +41,21 @@ fn main() {
         .run();
 }
 
-
-fn add_camera(mut commands: Commands) {
+fn setup(
+    mut commands: Commands,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    asset_server: Res<AssetServer>,
+) {
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
+    commands.spawn_bundle(UiCameraBundle::default());
+
+    // Need to be references because I cannot pass ownership
+    // TODO at some point you need to figure out what exactly is going on with
+    // commands here
+    // What exactly are we mutating
+    spawn_player(&mut commands, &mut materials);
+    spawn_starting_block(&mut commands, &mut materials);
+    render_score(&mut commands, &asset_server);
 }
 
 struct Collidable;
@@ -59,7 +68,7 @@ struct Player {
     teleport_distance: f32,
 }
 
-fn spawn_player(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
+fn spawn_player(commands: &mut Commands, materials: &mut ResMut<Assets<ColorMaterial>>) {
     let sprite_size_x = 40.0;
     let sprite_size_y = 40.0;
 
@@ -190,7 +199,10 @@ struct Block {
     direction: Direction,
 }
 
-fn spawn_starting_block(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
+fn spawn_starting_block(
+    mut commands: &mut Commands,
+    mut materials: &mut ResMut<Assets<ColorMaterial>>,
+) {
     let mut counter = 0;
 
     let block_number = 20;
@@ -264,12 +276,7 @@ fn move_blocks(mut block_query: Query<(&Block, &mut Transform, &Sprite)>, time: 
 
 // Score
 
-fn render_score(mut commands: Commands, asset_server: Res<AssetServer>) {
-
-    // UI camera
-    // Need ui camera to see UI
-    commands.spawn_bundle(UiCameraBundle::default());
-
+fn render_score(commands: &mut Commands, asset_server: &Res<AssetServer>) {
     let text = Text::with_section(
         "hello world!".to_string(),
         TextStyle {
@@ -291,7 +298,7 @@ fn render_score(mut commands: Commands, asset_server: Res<AssetServer>) {
         align_self: AlignSelf::FlexEnd,
         // TODO what is this doing
         position_type: PositionType::Absolute,
-        position: Rect{
+        position: Rect {
             top: Val::Px(60.0),
             right: Val::Px(80.0),
 
