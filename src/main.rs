@@ -1,4 +1,10 @@
-use bevy::{prelude::*, sprite::collide_aabb::collide, core::FixedTimestep};
+use bevy::{
+    asset::AssetServer,
+    core::FixedTimestep,
+    diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
+    prelude::*,
+    sprite::collide_aabb::collide,
+};
 
 use rand::distributions::{Distribution, Standard};
 use rand::{thread_rng, Rng};
@@ -22,6 +28,7 @@ fn main() {
         .add_startup_system(add_camera.system())
         .add_startup_system(spawn_player.system())
         .add_startup_system(spawn_starting_block.system())
+        .add_startup_system(render_score.system())
         .add_system_set(
             SystemSet::new()
                 // This prints out "goodbye world" twice every second
@@ -31,8 +38,12 @@ fn main() {
         .add_system(move_player.system())
         .add_system(move_blocks.system())
         .add_system(player_collision_system.system())
+        // Turn on to see framerate, also import line above
+        .add_plugin(LogDiagnosticsPlugin::default())
+        .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .run();
 }
+
 
 fn add_camera(mut commands: Commands) {
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
@@ -180,7 +191,6 @@ struct Block {
 }
 
 fn spawn_starting_block(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
-
     let mut counter = 0;
 
     let block_number = 20;
@@ -192,12 +202,15 @@ fn spawn_starting_block(mut commands: Commands, mut materials: ResMut<Assets<Col
 
 // spawns blocks as a way to make the game harder during runtime
 // this will only run every spawn block timestep
-fn spawn_runtime_blocks(mut commands: Commands,
-                        mut materials: ResMut<Assets<ColorMaterial>>) {
+fn spawn_runtime_blocks(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
     spawn_block(&mut commands, &mut materials, Color::rgb(0.2, 0.5, 1.0))
 }
 
-fn spawn_block(commands: &mut Commands, materials: &mut ResMut<Assets<ColorMaterial>>, color : Color) {
+fn spawn_block(
+    commands: &mut Commands,
+    materials: &mut ResMut<Assets<ColorMaterial>>,
+    color: Color,
+) {
     let mut rng = thread_rng();
     let rand_direction: Direction = rand::random();
     let x_starting_position = rng.gen_range(0.0..=WINDOWWIDTH);
@@ -248,3 +261,54 @@ fn move_blocks(mut block_query: Query<(&Block, &mut Transform, &Sprite)>, time: 
         }
     }
 }
+
+// Score
+
+fn render_score(mut commands: Commands, asset_server: Res<AssetServer>) {
+
+    // UI camera
+    // Need ui camera to see UI
+    commands.spawn_bundle(UiCameraBundle::default());
+
+    let text = Text::with_section(
+        "hello world!".to_string(),
+        TextStyle {
+            // It does seem to find the asset
+            font: asset_server.load("fonts/Roboto-Thin.ttf"),
+            font_size: 60.0,
+            color: Color::BLACK,
+        },
+        TextAlignment {
+            vertical: VerticalAlign::Center,
+            horizontal: HorizontalAlign::Center,
+        },
+    );
+
+    // NOTE
+    // I need to keep messing around with this until I get it in the top right corner
+    let style = Style {
+        // TODO what is this doing
+        align_self: AlignSelf::FlexEnd,
+        // TODO what is this doing
+        position_type: PositionType::Absolute,
+        position: Rect{
+            top: Val::Px(60.0),
+            right: Val::Px(80.0),
+
+            // default is spawning in the lower left hand corner
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+
+    commands.spawn_bundle(TextBundle {
+        style: style,
+        text: text,
+        ..Default::default()
+    });
+}
+
+// TODO this function should be called every frame
+// fn score_update_system() {
+
+// }
