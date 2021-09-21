@@ -1,20 +1,46 @@
-#+TITLE: Bevy Asteroids
+#+TITLE: Bevy Block Game
 
-This is an Asteroids clone in Bevy. It's purpose is to get me familiar with game development using Bevy.
+* Block Spawning Improvements
+
+I want two improvements
+1. Blocks should spawn in on the side of the screen so the player doesn't immediatly die
+2. Blocks should not spawn in the same direction and "path" as other blocks.
+
+A block "path" is the path the block takes when it loops through the screen.
+
+This is actually somewhat tricky to implement. In order to know where to spawn blocks I would need to be aware of what blocks already exist. I guess I could have a hashmap of current block spawning locations and then specify that a block should not spawn there. Or would a list be better?
+
+If I had something like
 
 
-My starting ideas are that this game is gonna need...
+Alright wait what I really want after talking it over with Willy is to use a set, or perhaps in rusts case, a hashset.
+Then I can...
+1. Make a random location and direction
+2. Check to see if it is in the set +/- some level of tolerance
+3. If it isn't then spawn it, if it is then don't spawn it
 
-1. A player with
-   - x and y movement, can be both at the same time
-   - shooting mechanics
-   - collision mechanics
-   - death (I would gie 3 lives)
-2. Asteroids that can
-   - move
-   - die
-   - kill the player
-3. Some Other Systems include
-   - spawning asteroids
-   - having boundaries for the player
-   - incrementing the score over time as the player shoots asteroids
+#+begin_src rust
+enum Direction {
+    Left,
+    Right,
+    Up,
+    Down,
+}
+
+struct BlockData {
+    spawn_position: (f32, f32),
+    spawn_direction: Direction
+}
+
+struct Blocks {
+    block_data: HashSet????????
+}
+
+fn main() {
+
+}
+#+end_src
+
+st
+
+[]

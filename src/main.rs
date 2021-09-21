@@ -1,8 +1,14 @@
 use bevy::{
     asset::AssetServer,
     core::FixedTimestep,
-    diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
-    prelude::*,
+    // diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
+    prelude::{
+        AlignSelf, App, Assets, Color, ColorMaterial, Commands, DefaultPlugins, Entity,
+        HorizontalAlign, Input, IntoSystem, KeyCode, OrthographicCameraBundle, PositionType, Query,
+        Rect, Res, ResMut, Sprite, SpriteBundle, Style, SystemSet, Text, TextAlignment, TextBundle,
+        TextSection, TextStyle, Time, Transform, UiCameraBundle, Val, Vec2, VerticalAlign,
+        WindowDescriptor, With, Without,
+    },
     sprite::collide_aabb::collide,
 };
 
@@ -14,6 +20,7 @@ const WINDOWWIDTH: f32 = 1000.0;
 
 // For BLOCK_SPAWN_TIMESTEP, it's once every two seconds
 const BLOCK_SPAWN_TIMESTEP: f64 = 120.0 / 60.0;
+const SCORE_ACC_TIMESTEP: f64 = 1.0;
 
 fn main() {
     App::build()
@@ -32,12 +39,18 @@ fn main() {
                 .with_run_criteria(FixedTimestep::step(BLOCK_SPAWN_TIMESTEP))
                 .with_system(spawn_runtime_blocks.system()),
         )
+        .add_system_set(
+            SystemSet::new()
+                // This prints out "goodbye world" twice every second
+                .with_run_criteria(FixedTimestep::step(SCORE_ACC_TIMESTEP))
+                .with_system(score_update_system.system()),
+        )
         .add_system(move_player.system())
         .add_system(move_blocks.system())
         .add_system(player_collision_system.system())
         // Turn on to see framerate, also import line above
-        .add_plugin(LogDiagnosticsPlugin::default())
-        .add_plugin(FrameTimeDiagnosticsPlugin::default())
+        // .add_plugin(LogDiagnosticsPlugin::default())
+        // .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .run();
 }
 
@@ -276,20 +289,25 @@ fn move_blocks(mut block_query: Query<(&Block, &mut Transform, &Sprite)>, time: 
 
 // Score
 
+struct Score(i32);
+
 fn render_score(commands: &mut Commands, asset_server: &Res<AssetServer>) {
-    let text = Text::with_section(
-        "hello world!".to_string(),
-        TextStyle {
-            // It does seem to find the asset
+    let text_section = TextSection {
+        value: 0.to_string(),
+        style: TextStyle {
             font: asset_server.load("fonts/Roboto-Thin.ttf"),
             font_size: 60.0,
             color: Color::BLACK,
         },
-        TextAlignment {
+    };
+
+    let text = Text {
+        sections: vec![text_section],
+        alignment: TextAlignment {
             vertical: VerticalAlign::Center,
             horizontal: HorizontalAlign::Center,
         },
-    );
+    };
 
     // NOTE
     // I need to keep messing around with this until I get it in the top right corner
@@ -308,14 +326,23 @@ fn render_score(commands: &mut Commands, asset_server: &Res<AssetServer>) {
         ..Default::default()
     };
 
-    commands.spawn_bundle(TextBundle {
-        style: style,
-        text: text,
-        ..Default::default()
-    });
+    commands
+        .spawn_bundle(TextBundle {
+            style: style,
+            text: text,
+            ..Default::default()
+        })
+        .insert(Score(0));
 }
 
 // TODO this function should be called every frame
-// fn score_update_system() {
+fn score_update_system(mut score_query: Query<(&mut Score, &mut Text)>) {
+    let (mut score, mut text) = score_query
+        .single_mut()
+        .expect("There should only be one score in the game.");
 
-// }
+    // accumulate the score
+    score.0 += 1;
+    let string_score: String = score.0.to_string();
+    text.sections[0].value = string_score;
+}
