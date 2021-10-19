@@ -15,6 +15,8 @@ use bevy::{
 use rand::distributions::{Distribution, Standard};
 use rand::{thread_rng, Rng};
 
+mod logic;
+
 const WINDOWHEIGHT: f32 = 900.0;
 const WINDOWWIDTH: f32 = 1000.0;
 
@@ -33,6 +35,7 @@ fn main() {
         })
         .add_plugins(DefaultPlugins)
         .add_startup_system(setup.system())
+        .add_plugin(logic::spawning::SpawningPlugin)
         .add_system_set(
             SystemSet::new()
                 // This prints out "goodbye world" twice every second
@@ -69,6 +72,17 @@ fn setup(
     spawn_player(&mut commands, &mut materials);
     spawn_starting_block(&mut commands, &mut materials);
     render_score(&mut commands, &asset_server);
+}
+
+// TODO its time to organize this project into modules
+// Block Spawning Code
+
+#[derive(Clone)]
+enum Direction {
+    Left,
+    Right,
+    Up,
+    Down,
 }
 
 struct Collidable;
@@ -188,13 +202,6 @@ fn player_collision_system(
     }
 }
 
-// Block Code
-enum Direction {
-    Left,
-    Right,
-    Up,
-    Down,
-}
 
 impl Distribution<Direction> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Direction {
