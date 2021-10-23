@@ -3,13 +3,12 @@ use bevy::{
     core::FixedTimestep,
     // diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
     prelude::{
-        AlignSelf, App, Assets, Color, ColorMaterial, Commands, DefaultPlugins, Entity,
-        HorizontalAlign, Input, IntoSystem, KeyCode, OrthographicCameraBundle, PositionType, Query,
+        AlignSelf, App, Assets, Color, ColorMaterial, Commands, DefaultPlugins,
+        HorizontalAlign, IntoSystem, OrthographicCameraBundle, PositionType, Query,
         Rect, Res, ResMut, Sprite, SpriteBundle, Style, SystemSet, Text, TextAlignment, TextBundle,
         TextSection, TextStyle, Time, Transform, UiCameraBundle, Val, Vec2, VerticalAlign,
-        WindowDescriptor, With, Without,
+        WindowDescriptor
     },
-    sprite::collide_aabb::collide,
 };
 
 use rand::distributions::{Distribution, Standard};
@@ -36,6 +35,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_startup_system(setup.system())
         .add_plugin(logic::spawning::SpawningPlugin)
+        .add_plugin(logic::player::PlayerPlugin)
         .add_system_set(
             SystemSet::new()
                 // This prints out "goodbye world" twice every second
@@ -48,11 +48,8 @@ fn main() {
                 .with_run_criteria(FixedTimestep::step(SCORE_ACC_TIMESTEP))
                 .with_system(score_update_system.system()),
         )
-        .add_system(move_player.system())
         .add_system(move_blocks.system())
-        .add_system(player_collision_system.system())
         // Turn on to see framerate, also import line above
-        // .add_plugin(LogDiagnosticsPlugin::default())
         // .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .run();
 }
@@ -65,11 +62,6 @@ fn setup(
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
     commands.spawn_bundle(UiCameraBundle::default());
 
-    // Need to be references because I cannot pass ownership
-    // TODO at some point you need to figure out what exactly is going on with
-    // commands here
-    // What exactly are we mutating
-    spawn_player(&mut commands, &mut materials);
     spawn_starting_block(&mut commands, &mut materials);
     render_score(&mut commands, &asset_server);
 }
@@ -86,122 +78,6 @@ enum Direction {
 }
 
 struct Collidable;
-
-// PLAYER CODE
-
-// The float value is the player movement speed in 'pixels/second'.
-struct Player {
-    velocity: f32,
-    teleport_distance: f32,
-}
-
-fn spawn_player(commands: &mut Commands, materials: &mut ResMut<Assets<ColorMaterial>>) {
-    let sprite_size_x = 40.0;
-    let sprite_size_y = 40.0;
-
-    commands
-        .spawn_bundle(SpriteBundle {
-            material: materials.add(Color::rgb(0.5, 0.5, 1.0).into()),
-            transform: Transform::from_xyz(0.0, 0.0, 1.0),
-            sprite: Sprite::new(Vec2::new(sprite_size_x, sprite_size_y)),
-            ..Default::default()
-        })
-        .insert(Player {
-            velocity: 300.0,
-            teleport_distance: 70.0,
-        })
-        .insert(Collidable);
-}
-
-fn move_player(
-    keyboard_input: Res<Input<KeyCode>>,
-    mut player_query: Query<(&Player, &mut Transform, &Sprite)>,
-    time: Res<Time>,
-) {
-    if let Ok((player, mut transform, sprite)) = player_query.single_mut() {
-        // Get input from the keyboard (WASD)
-        let up: bool = keyboard_input.pressed(KeyCode::W) || keyboard_input.pressed(KeyCode::Up);
-        let down: bool =
-            keyboard_input.pressed(KeyCode::S) || keyboard_input.pressed(KeyCode::Down);
-        let left: bool =
-            keyboard_input.pressed(KeyCode::A) || keyboard_input.pressed(KeyCode::Left);
-        let right: bool =
-            keyboard_input.pressed(KeyCode::D) || keyboard_input.pressed(KeyCode::Right);
-
-        // If left is pressed than it will be -1, right 1, both they cancel out.
-        let x_axis: i8 = -(left as i8) + right as i8;
-        let y_axis: i8 = -(down as i8) + up as i8;
-        let move_delta: Vec2 = Vec2::new(x_axis as f32, y_axis as f32);
-
-        // move the player
-        let delta_time = time.delta_seconds();
-        transform.translation.x += move_delta.x * player.velocity * delta_time;
-        transform.translation.y += move_delta.y * player.velocity * delta_time;
-
-        // Wrap the player if they go off screen
-        if transform.translation.x > WINDOWWIDTH / 2.0 + sprite.size.x {
-            transform.translation.x = -WINDOWWIDTH / 2.0;
-        }
-
-        if transform.translation.x < -WINDOWWIDTH / 2.0 - sprite.size.x {
-            transform.translation.x = WINDOWWIDTH / 2.0;
-        }
-
-        if transform.translation.y > WINDOWHEIGHT / 2.0 + sprite.size.y {
-            transform.translation.y = -WINDOWHEIGHT / 2.0;
-        }
-
-        if transform.translation.y < -WINDOWHEIGHT / 2.0 - sprite.size.y {
-            transform.translation.y = WINDOWHEIGHT / 2.0;
-        }
-
-        // teleport the player if they press space
-        if keyboard_input.just_pressed(KeyCode::Space) {
-            if y_axis == -1 {
-                transform.translation.y -= player.teleport_distance;
-            }
-
-            if y_axis == 1 {
-                transform.translation.y += player.teleport_distance;
-            }
-
-            if x_axis == 1 {
-                transform.translation.x += player.teleport_distance;
-            }
-
-            if x_axis == -1 {
-                transform.translation.x -= player.teleport_distance;
-            }
-        }
-    }
-}
-
-// simple, player collides with block system
-fn player_collision_system(
-    mut commands: Commands,
-    mut player_query: Query<(Entity, &Sprite, &Transform), With<Player>>,
-    collider_query: Query<&Transform, (With<Collidable>, Without<Player>)>,
-) {
-    if let Ok((player_entity, sprite, player_transform)) = player_query.single_mut() {
-        let player_size = sprite.size;
-
-        for transform in collider_query.iter() {
-            let collision = collide(
-                player_transform.translation,
-                player_size,
-                transform.translation,
-                sprite.size,
-            );
-
-            if let Some(_collision) = collision {
-                // NOTE maybe add lives later
-                // Remove the player if they collide with a block
-                commands.entity(player_entity).despawn();
-            }
-        }
-    }
-}
-
 
 impl Distribution<Direction> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Direction {
