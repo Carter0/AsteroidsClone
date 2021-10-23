@@ -14,15 +14,14 @@ pub struct BlocksPlugin;
 
 impl Plugin for BlocksPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app
-        .add_startup_system(spawn_starting_block.system())
-        .add_system_set(
-            SystemSet::new()
-                .with_run_criteria(FixedTimestep::step(BLOCK_SPAWN_TIMESTEP))
-                .with_system(spawn_runtime_blocks.system()),
-        )
-        .add_system(move_blocks.system());
-        }
+        app.add_startup_system(spawn_starting_block.system())
+            .add_system_set(
+                SystemSet::new()
+                    .with_run_criteria(FixedTimestep::step(BLOCK_SPAWN_TIMESTEP))
+                    .with_system(spawn_runtime_blocks.system()),
+            )
+            .add_system(move_blocks.system());
+    }
 }
 
 impl Distribution<Direction> for Standard {
@@ -41,10 +40,7 @@ struct Block {
     direction: Direction,
 }
 
-fn spawn_starting_block(
-    mut commands: Commands,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-) {
+fn spawn_starting_block(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
     let mut counter = 0;
 
     let block_number = 20;

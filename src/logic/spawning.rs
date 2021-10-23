@@ -1,8 +1,4 @@
-use crate::{
-    Direction,
-    WINDOWHEIGHT,
-    WINDOWWIDTH
-};
+use crate::{Direction, WINDOWHEIGHT, WINDOWWIDTH};
 
 use bevy::prelude::*;
 use rand::Rng;
@@ -12,8 +8,7 @@ pub struct SpawningPlugin;
 
 impl Plugin for SpawningPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app
-        .add_startup_system(spawn_block_positions.system());
+        app.add_startup_system(spawn_block_positions.system());
     }
 }
 
