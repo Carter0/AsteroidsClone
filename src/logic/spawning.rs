@@ -1,4 +1,4 @@
-use crate::{Direction, WINDOWHEIGHT, WINDOWWIDTH};
+use crate::{CommonLabels, Direction, WINDOWHEIGHT, WINDOWWIDTH};
 
 use bevy::prelude::*;
 use rand::Rng;
@@ -8,7 +8,12 @@ pub struct SpawningPlugin;
 
 impl Plugin for SpawningPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_startup_system(spawn_block_positions.system());
+        app.add_startup_system(
+            spawn_block_positions
+                .system()
+                .label(CommonLabels::Spawning)
+                .before(CommonLabels::BlockLogic),
+        );
     }
 }
 
@@ -36,16 +41,16 @@ impl fmt::Display for Direction {
 // a block can be spawned in as well as whether
 // that position is spawned or not
 #[derive(Clone)]
-struct SpawnInfo {
-    spawn_location: (i16, i16),
-    spawn_direction: Direction,
-    spawned: bool,
+pub struct SpawnInfo {
+    pub spawn_location: (i16, i16),
+    pub spawn_direction: Direction,
+    pub spawned: bool,
 }
 
 // Contains the spawn locations for all the blocks
 // Will be used to actually spawn the blocks later
-struct SpawnList {
-    spawn_list: Vec<SpawnInfo>,
+pub struct SpawnList {
+    pub spawn_list: Vec<SpawnInfo>,
 }
 
 impl fmt::Display for SpawnInfo {
@@ -116,6 +121,13 @@ fn create_spawn_locations() -> SpawnList {
     }
 }
 
-fn spawn_block_positions() {
-    create_spawn_locations();
+// Create a list of spawn block locations and
+// add them as a component to Bevy.
+//
+// NOTE
+// Command usage is only applied between stages,
+// so anything that wants to access this data needs to do so in a later
+// stage.
+fn spawn_block_positions(mut commands: Commands) {
+    commands.spawn().insert(create_spawn_locations());
 }

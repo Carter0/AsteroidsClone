@@ -34,8 +34,8 @@ fn setup(mut commands: Commands) {
     commands.spawn_bundle(UiCameraBundle::default());
 }
 
-#[derive(Clone)]
-enum Direction {
+#[derive(Clone, Copy)]
+pub enum Direction {
     Left,
     Right,
     Up,
@@ -43,3 +43,9 @@ enum Direction {
 }
 
 struct Collidable;
+
+#[derive(SystemLabel, Eq, PartialEq, Debug, Hash, Clone)]
+enum CommonLabels {
+    Spawning,
+    BlockLogic
+}
