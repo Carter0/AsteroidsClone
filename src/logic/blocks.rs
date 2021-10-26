@@ -1,7 +1,7 @@
 // BLOCKS CODE
 
 use crate::logic::spawning::{SpawnInfo, SpawnList};
-use crate::{Collidable, CommonLabels, Direction, WINDOWHEIGHT, WINDOWWIDTH};
+use crate::{Collidable, Direction, WINDOWHEIGHT, WINDOWWIDTH};
 
 use bevy::core::FixedTimestep;
 use bevy::prelude::*;
@@ -16,14 +16,9 @@ pub struct BlocksPlugin;
 
 impl Plugin for BlocksPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        // TODO this needs to go after the spawning logic
-        // So this needs a label
-        app.add_startup_system(
-            spawn_starting_block
-                .system()
-                .label(CommonLabels::BlockLogic)
-                .after(CommonLabels::Spawning),
-        )
+        app
+        // Needs to be run after spawning logic
+        .add_startup_system_to_stage(StartupStage::PostStartup, spawn_starting_block.system())
         .add_system_set(
             SystemSet::new()
                 .with_run_criteria(FixedTimestep::step(BLOCK_SPAWN_TIMESTEP))
@@ -55,27 +50,13 @@ fn spawn_starting_block(
     mut spawn_positions_query: Query<&mut SpawnList>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
-    // let spawn_positions = spawn_positions_query.iter_mut();
-    // I checked and the spawning code does run??
-    // My only running theory right now is that
-    // while the spawning code does run first it doesn't finish
-    // by the time this system starts running.
-
-    // println!("{}", spawn_positions.len());
-    //
-    // TODO
-    // Here is the fix
-    // .add_startup_system_to_stage(StartupStage::PostStartup, spawn_starting_block)
-
-    // NOTE
-    // this currently returns nothing :(
     let mut spawn_positions = spawn_positions_query
         .single_mut()
         .expect("There should only be one instance of spawn positions");
 
     let mut counter = 0;
 
-    let block_number = 20;
+    let block_number = 5;
     while counter < block_number {
         spawn_block(
             &mut commands,
@@ -106,54 +87,12 @@ fn spawn_runtime_blocks(
     );
 }
 
-// TODO
-// Alright look, what do you want???
-//
-// I think what I want is for the SpawnList to be a component
-// that can be used by all the systems here
-// Then we just pass in the component to the systems that need it.
-// Then all we are doing is updating the component as we go.
-//
-// How do we add components?
-// Fairly simple, components.spawn().insert()
-//
-//
-// Once you do that you can pas
-//
-// What do you have??
-//
-//
-// What I have...
-//
-// Contains the locations and directions that
-// a block can be spawned in as well as whether
-// that position is spawned or not
-// #[derive(Clone)]
-// struct SpawnInfo {
-//     spawn_location: (i16, i16),
-//     spawn_direction: Direction,
-//     spawned: bool,
-// }
-
-// // Contains the spawn locations for all the blocks
-// // Will be used to actually spawn the blocks later
-// struct SpawnList {
-//     spawn_list: Vec<SpawnInfo>,
-// }
-
-// TODO
-// I think this function should spawn a block based on the spawn positions
 fn spawn_block(
     commands: &mut Commands,
     materials: &mut ResMut<Assets<ColorMaterial>>,
     spawn_positions: &mut SpawnList,
     color: Color,
 ) {
-    // TODO
-    // 1. Filter through the list of spawn positions for unfilled positions
-    // 2. Randomly choose a spawn position of the remaining ones
-    // 3. Spawn that one
-
     let mut rng = thread_rng();
     let random_position: &SpawnInfo = spawn_positions
         .spawn_list
@@ -172,26 +111,25 @@ fn spawn_block(
     // let y_starting_position = rng.gen_range(0.0..=WINDOWHEIGHT);
     let sprite_size_x = 80.0;
     let sprite_size_y = 80.0;
-
-    // struct SpawnInfo {
-    //     spawn_location: (i16, i16),
-    //     spawn_direction: Direction,
-    //     spawned: bool,
-    // }
-
     let location = random_position.spawn_location;
     let direction = random_position.spawn_direction;
 
+    // TODO
+    // Well I know one of the problems is that the screen goes from -450 to 450
+    // not 0 to 900 lol.
+    println!("x position: {}", location.0);
+    println!("y position: {}", location.1);
+
     commands
         .spawn_bundle(SpriteBundle {
+            sprite: Sprite::new(Vec2::new(sprite_size_x, sprite_size_y)),
             material: materials.add(color.into()),
             transform: Transform::from_xyz(location.0 as f32, location.1 as f32, 1.0),
-            sprite: Sprite::new(Vec2::new(sprite_size_x, sprite_size_y)),
             ..Default::default()
         })
         .insert(Block {
             velocity: 300.0,
-            direction: direction,
+            direction,
         })
         .insert(Collidable);
 }

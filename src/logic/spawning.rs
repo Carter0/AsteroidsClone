@@ -1,4 +1,4 @@
-use crate::{CommonLabels, Direction, WINDOWHEIGHT, WINDOWWIDTH};
+use crate::{Direction, WINDOWHEIGHT, WINDOWWIDTH};
 
 use bevy::prelude::*;
 use rand::Rng;
@@ -8,12 +8,8 @@ pub struct SpawningPlugin;
 
 impl Plugin for SpawningPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_startup_system(
-            spawn_block_positions
-                .system()
-                .label(CommonLabels::Spawning)
-                .before(CommonLabels::BlockLogic),
-        );
+        app
+            .add_startup_system_to_stage(StartupStage::Startup, spawn_block_positions.system());
     }
 }
 

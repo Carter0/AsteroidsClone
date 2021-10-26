@@ -43,9 +43,3 @@ pub enum Direction {
 }
 
 struct Collidable;
-
-#[derive(SystemLabel, Eq, PartialEq, Debug, Hash, Clone)]
-enum CommonLabels {
-    Spawning,
-    BlockLogic
-}
