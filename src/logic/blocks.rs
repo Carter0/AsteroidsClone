@@ -17,14 +17,14 @@ pub struct BlocksPlugin;
 impl Plugin for BlocksPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app
-        // Needs to be run after spawning logic
-        .add_startup_system_to_stage(StartupStage::PostStartup, spawn_starting_block.system())
-        .add_system_set(
-            SystemSet::new()
-                .with_run_criteria(FixedTimestep::step(BLOCK_SPAWN_TIMESTEP))
-                .with_system(spawn_runtime_blocks.system()),
-        )
-        .add_system(move_blocks.system());
+            // Needs to be run after spawning logic
+            .add_startup_system_to_stage(StartupStage::PostStartup, spawn_starting_block.system())
+            .add_system_set(
+                SystemSet::new()
+                    .with_run_criteria(FixedTimestep::step(BLOCK_SPAWN_TIMESTEP))
+                    .with_system(spawn_runtime_blocks.system()),
+            )
+            .add_system(move_blocks.system());
     }
 }
 
@@ -87,6 +87,13 @@ fn spawn_runtime_blocks(
     );
 }
 
+fn get_list_orientation(integer: i8, spawn_list: &SpawnList) -> &Vec<SpawnInfo> {
+    match integer {
+        1 => &spawn_list.horizontal_list,
+        _ => &spawn_list.vertical_list,
+    }
+}
+
 fn spawn_block(
     commands: &mut Commands,
     materials: &mut ResMut<Assets<ColorMaterial>>,
@@ -94,29 +101,25 @@ fn spawn_block(
     color: Color,
 ) {
     let mut rng = thread_rng();
-    let random_position: &SpawnInfo = spawn_positions
-        .spawn_list
+
+    // Randomly pick a position based on whether its been spawned or not
+    let random_position: &SpawnInfo = get_list_orientation(rng.gen_range(0..=1), &spawn_positions)
         .iter()
         .filter(|spawn_position| spawn_position.spawned == false)
         .choose(&mut rng)
         .unwrap();
 
-    // TODO
-    // Do I want to keep around this totally random spawning???
-    // Maybe have some kind of combination of both?
-    //
-    // let mut rng = thread_rng();
-    // let rand_direction: Direction = rand::random();
-    // let x_starting_position = rng.gen_range(0.0..=WINDOWWIDTH);
-    // let y_starting_position = rng.gen_range(0.0..=WINDOWHEIGHT);
     let sprite_size_x = 80.0;
     let sprite_size_y = 80.0;
     let location = random_position.spawn_location;
     let direction = random_position.spawn_direction;
 
     // TODO
-    // Well I know one of the problems is that the screen goes from -450 to 450
-    // not 0 to 900 lol.
+    // Also you never set spawned to true lol
+
+    // NOTE
+    // honestly I kinda like it without touching the spawn bool
+
     println!("x position: {}", location.0);
     println!("y position: {}", location.1);
 
@@ -124,7 +127,7 @@ fn spawn_block(
         .spawn_bundle(SpriteBundle {
             sprite: Sprite::new(Vec2::new(sprite_size_x, sprite_size_y)),
             material: materials.add(color.into()),
-            transform: Transform::from_xyz(location.0 as f32, location.1 as f32, 1.0),
+            transform: Transform::from_xyz(location.1 as f32, location.0 as f32, 1.0),
             ..Default::default()
         })
         .insert(Block {

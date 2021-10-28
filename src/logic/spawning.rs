@@ -8,8 +8,7 @@ pub struct SpawningPlugin;
 
 impl Plugin for SpawningPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app
-            .add_startup_system_to_stage(StartupStage::Startup, spawn_block_positions.system());
+        app.add_startup_system_to_stage(StartupStage::Startup, spawn_block_positions.system());
     }
 }
 
@@ -46,7 +45,8 @@ pub struct SpawnInfo {
 // Contains the spawn locations for all the blocks
 // Will be used to actually spawn the blocks later
 pub struct SpawnList {
-    pub spawn_list: Vec<SpawnInfo>,
+    pub horizontal_list: Vec<SpawnInfo>,
+    pub vertical_list: Vec<SpawnInfo>,
 }
 
 impl fmt::Display for SpawnInfo {
@@ -64,6 +64,10 @@ enum BlockDirection {
     Vertical,
 }
 
+fn get_edge_of_screen(window_size: f32) -> i16 {
+    window_size as i16 / 2
+}
+
 fn create_random_blocks<R: Rng>(
     block_positions: Vec<i16>,
     orientation: BlockDirection,
@@ -77,8 +81,8 @@ fn create_random_blocks<R: Rng>(
                 BlockDirection::Vertical => get_direction(rng.gen_range(3..=4)),
             },
             spawn_location: match orientation {
-                BlockDirection::Horizontal => (*block_position, 0),
-                BlockDirection::Vertical => (0, *block_position),
+                BlockDirection::Horizontal => (*block_position, get_edge_of_screen(WINDOWWIDTH)),
+                BlockDirection::Vertical => (get_edge_of_screen(WINDOWHEIGHT), *block_position),
             },
             spawned: false,
         })
@@ -94,12 +98,15 @@ fn create_spawn_locations() -> SpawnList {
     let blocks_per_height: i16 = WINDOWHEIGHT as i16 / (45 + 80);
 
     // Calculate the positions of the blocks per side
+    // Need to divide by half because (0,0) is the middle of the screen
     let block_width_positions: Vec<i16> = (1..=blocks_per_width)
         .map(|x| WINDOWWIDTH as i16 - (x * 90))
+        .map(|x| x - get_edge_of_screen(WINDOWWIDTH))
         .collect();
 
     let block_height_positions: Vec<i16> = (1..=blocks_per_height)
-        .map(|x| WINDOWHEIGHT as i16 - (x * 90))
+        .map(|y| WINDOWHEIGHT as i16 - (y * 90))
+        .map(|y| y - get_edge_of_screen(WINDOWHEIGHT))
         .collect();
 
     let mut rng = rand::thread_rng();
@@ -113,7 +120,8 @@ fn create_spawn_locations() -> SpawnList {
 
     // Combine the blocks together
     SpawnList {
-        spawn_list: [random_vertical_blocks, random_horizontal_blocks].concat(),
+        horizontal_list: random_horizontal_blocks,
+        vertical_list: random_vertical_blocks,
     }
 }
 
