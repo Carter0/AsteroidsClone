@@ -3,8 +3,10 @@ use bevy::prelude::*;
 mod graphics;
 mod logic;
 
-const WINDOWHEIGHT: f32 = 900.0;
-const WINDOWWIDTH: f32 = 1000.0;
+const WINDOWHEIGHT: f32 = 1200.0;
+const WINDOWWIDTH: f32 = 1500.0;
+const BLOCKSIZEX: f32 = 40.0;
+const BLOCKSIZEY: f32 = 40.0;
 
 fn main() {
     App::build()

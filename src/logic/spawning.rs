@@ -1,4 +1,4 @@
-use crate::{Direction, WINDOWHEIGHT, WINDOWWIDTH};
+use crate::{Direction, BLOCKSIZEX, BLOCKSIZEY, WINDOWHEIGHT, WINDOWWIDTH};
 
 use bevy::prelude::*;
 use rand::Rng;
@@ -32,13 +32,6 @@ impl fmt::Display for Direction {
     }
 }
 
-// TODO
-// I feel like the below can be simplified greatly
-// by removing spawnlists
-//
-// I think that the only benefit they provide is indicating whether something is horizontal or
-// vertical, which can be contained in the SpawnInfo Struct.
-
 // Contains the locations and directions that
 // a block can be spawned in as well as whether
 // that position is spawned or not
@@ -49,13 +42,6 @@ pub struct SpawnInfo {
     pub spawned: bool,
     pub direction: BlockDirection,
 }
-
-// Contains the spawn locations for all the blocks
-// Will be used to actually spawn the blocks later
-// pub struct SpawnList {
-//     pub horizontal_list: Vec<SpawnInfo>,
-//     pub vertical_list: Vec<SpawnInfo>,
-// }
 
 impl fmt::Display for SpawnInfo {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -73,7 +59,7 @@ pub enum BlockDirection {
     Vertical,
 }
 
-// spawning at 500
+// The edge of the screen is half of the total size
 fn get_edge_of_screen(window_size: f32) -> i16 {
     window_size as i16 / 2
 }
@@ -97,7 +83,7 @@ fn create_random_blocks<R: Rng>(
                 BlockDirection::Vertical => (*block_position, get_edge_of_screen(WINDOWHEIGHT)),
             },
             spawned: false,
-            direction: orientation
+            direction: orientation,
         })
         .collect();
 }
@@ -108,21 +94,19 @@ fn create_spawn_locations() -> Vec<SpawnInfo> {
     // Calculate the number of blocks per side
     // ScreenLength / (BlockGap + BlockLength) = BlockNumber
     // Plus 1 because I want one block to spawn at the opposite edge
-    let blocks_per_width: i16 = WINDOWWIDTH as i16 / (45 + 80) + 1;
-    let blocks_per_height: i16 = WINDOWHEIGHT as i16 / (45 + 80) + 1;
+    let blocks_per_width: i16 = WINDOWWIDTH as i16 / (45 + BLOCKSIZEX as i16);
+    let blocks_per_height: i16 = WINDOWHEIGHT as i16 / (45 + BLOCKSIZEY as i16);
 
     // Calculate the positions of the blocks per side
     // Need to divide by half because (0,0) is the middle of the screen
-    // TODO
-    // Redo the names to horizontal and vertical positions because
-    // the width and height thing is confusing you.
-    // There are horizontal and vertical blocks, not positions here
-    let block_width_positions: Vec<i16> = (0..=blocks_per_width)
+    // Vertical blocks have different x spawning positions
+    let vertical_block_positions: Vec<i16> = (0..=blocks_per_width)
         .map(|x| WINDOWWIDTH as i16 - (x * 90))
         .map(|x| x - get_edge_of_screen(WINDOWWIDTH))
         .collect();
 
-    let block_height_positions: Vec<i16> = (0..=blocks_per_height)
+    // Horizontal blocks have different y spawning positions
+    let horizontal_block_positions: Vec<i16> = (0..=blocks_per_height)
         .map(|y| WINDOWHEIGHT as i16 - (y * 90))
         .map(|y| y - get_edge_of_screen(WINDOWHEIGHT))
         .collect();
@@ -131,14 +115,16 @@ fn create_spawn_locations() -> Vec<SpawnInfo> {
 
     // Create the horizontal and vertical blocks
     let random_horizontal_blocks: Vec<SpawnInfo> =
-        create_random_blocks(block_width_positions, BlockDirection::Horizontal, &mut rng);
+        create_random_blocks(vertical_block_positions, BlockDirection::Vertical, &mut rng);
 
-    let random_vertical_blocks: Vec<SpawnInfo> =
-        create_random_blocks(block_height_positions, BlockDirection::Vertical, &mut rng);
+    let random_vertical_blocks: Vec<SpawnInfo> = create_random_blocks(
+        horizontal_block_positions,
+        BlockDirection::Horizontal,
+        &mut rng,
+    );
 
     // Combine the blocks together
     [random_horizontal_blocks, random_vertical_blocks].concat()
-
 }
 
 // Create a list of spawn block locations and
