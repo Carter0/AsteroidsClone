@@ -41,7 +41,7 @@ impl Distribution<Direction> for Standard {
     }
 }
 
-struct Block {
+pub struct Block {
     velocity: f32,
     direction: Direction,
 }
@@ -73,7 +73,7 @@ fn spawn_runtime_blocks(
     let mut rng = thread_rng();
     let spawn_position: Option<Mut<'_, SpawnInfo>> = spawn_positions_query
         .iter_mut()
-        .filter(|spawn_position| spawn_position.spawned == false)
+        .filter(|spawn_position| !spawn_position.spawned )
         .choose(&mut rng);
 
     match spawn_position {
@@ -103,12 +103,8 @@ fn spawn_block(
     // set the positions spawned value to true
     spawn_position.spawned = true;
 
-    // TODO stop score accumulation
     // TODO Respawn button
-    // TODO Exit Button
-
-    println!("x position: {}", location.0);
-    println!("y position: {}", location.1);
+    // TODO Give Exit Button Text on Screen
 
     commands
         .spawn_bundle(SpriteBundle {

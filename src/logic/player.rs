@@ -1,5 +1,6 @@
 // PLAYER CODE
 
+use crate::graphics::score::Score;
 use crate::{Collidable, WINDOWHEIGHT, WINDOWWIDTH};
 
 use bevy::prelude::*;
@@ -16,7 +17,7 @@ impl Plugin for PlayerPlugin {
 }
 
 // The float value is the player movement speed in 'pixels/second'.
-struct Player {
+pub struct Player {
     velocity: f32,
     teleport_distance: f32,
 }
@@ -107,6 +108,7 @@ fn player_collision_system(
     mut commands: Commands,
     mut player_query: Query<(Entity, &Sprite, &Transform), With<Player>>,
     collider_query: Query<&Transform, (With<Collidable>, Without<Player>)>,
+    mut score_query: Query<&mut Score>
 ) {
     if let Ok((player_entity, sprite, player_transform)) = player_query.single_mut() {
         let player_size = sprite.size;
@@ -120,9 +122,15 @@ fn player_collision_system(
             );
 
             if let Some(_collision) = collision {
-                // NOTE maybe add lives later
                 // Remove the player if they collide with a block
                 commands.entity(player_entity).despawn();
+
+                // Stop accumulating the score
+                let mut score = score_query
+                    .single_mut()
+                    .expect("There should only be one score in the game.");
+
+                score.active = false;
             }
         }
     }

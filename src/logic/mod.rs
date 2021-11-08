@@ -2,3 +2,4 @@
 pub mod spawning;
 pub mod player;
 pub mod blocks;
+pub mod reset_game;

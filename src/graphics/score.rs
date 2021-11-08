@@ -20,7 +20,10 @@ impl Plugin for ScorePlugin {
     }
 }
 
-struct Score(i32);
+pub struct Score {
+    pub value: i32,
+    pub active: bool,
+}
 
 // NOTE
 // I have no clue what a lot of the styling/positions does here.
@@ -58,11 +61,11 @@ fn render_score(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     commands
         .spawn_bundle(TextBundle {
-            style: style,
-            text: text,
+            style,
+            text,
             ..Default::default()
         })
-        .insert(Score(0));
+        .insert(Score{value: 0, active: true});
 }
 
 fn score_update_system(mut score_query: Query<(&mut Score, &mut Text)>) {
@@ -70,8 +73,10 @@ fn score_update_system(mut score_query: Query<(&mut Score, &mut Text)>) {
         .single_mut()
         .expect("There should only be one score in the game.");
 
-    // accumulate the score
-    score.0 += 1;
-    let string_score: String = score.0.to_string();
-    text.sections[0].value = string_score;
+    // accumulate the score if its active
+    if score.active {
+        score.value += 1;
+        let string_score: String = score.value.to_string();
+        text.sections[0].value = string_score;
+    }
 }
