@@ -10,11 +10,11 @@ pub struct ResetGamePlugin;
 
 impl Plugin for ResetGamePlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_system(respawn_player.system());
+        app.add_system(reset_game.system());
     }
 }
 
-fn respawn_player(
+fn reset_game(
     keyboard_input: Res<Input<KeyCode>>,
     mut player_query: Query<&mut Transform, With<Player>>,
     block_query: Query<Entity, With<Block>>,

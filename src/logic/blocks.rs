@@ -20,6 +20,7 @@ impl Plugin for BlocksPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app
             // Needs to be run after spawning logic
+            .add_event::<SpawnBlockEvent>()
             .add_startup_system_to_stage(StartupStage::PostStartup, spawn_starting_block.system())
             .add_system_set(
                 SystemSet::new()
@@ -47,43 +48,35 @@ pub struct Block {
 }
 
 // Spawns starting blocks for the game
+// TODO my guess is that this
 fn spawn_starting_block(
-    mut commands: Commands,
-    mut spawn_positions_query: Query<&mut SpawnInfo>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
+    mut spawn_positions_query: Query<(Entity, With<SpawnInfo>)>,
+    mut spawn_event: EventWriter<SpawnBlockEvent>,
 ) {
     let block_number = 6;
-    for mut init_spawn_positions in spawn_positions_query.iter_mut().take(block_number) {
-        spawn_block(
-            &mut commands,
-            &mut materials,
-            &mut init_spawn_positions,
-            Color::rgb(1.0, 0.5, 1.0),
-        );
+    for (entity, boolean) in spawn_positions_query.iter_mut().take(block_number) {
+        println!("bool is {}", boolean);
+        spawn_event.send(SpawnBlockEvent(entity))
     }
 }
 
 // spawns blocks as a way to make the game harder during runtime
 // this will only run every spawn block timestep
 fn spawn_runtime_blocks(
-    mut commands: Commands,
-    mut spawn_positions_query: Query<&mut SpawnInfo>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
+    spawn_positions_query: Query<(Entity, &SpawnInfo)>,
+    mut spawn_event: EventWriter<SpawnBlockEvent>,
 ) {
     let mut rng = thread_rng();
-    let spawn_position: Option<Mut<'_, SpawnInfo>> = spawn_positions_query
-        .iter_mut()
-        .filter(|spawn_position| !spawn_position.spawned )
+
+    let spawn_entity: Option<Entity> = spawn_positions_query
+        .iter()
+        .filter(|(_entity, spawn_position)| !spawn_position.spawned )
+        .map(|tuple| tuple.0)
         .choose(&mut rng);
 
-    match spawn_position {
-        Some(mut spawn_info) => {
-            spawn_block(
-                &mut commands,
-                &mut materials,
-                &mut spawn_info,
-                Color::rgb(0.2, 0.5, 1.0),
-            );
+    match spawn_entity {
+        Some(entity) => {
+            spawn_event.send(SpawnBlockEvent(entity))
         }
         // NOTE
         // You could do the swap around stuff here at some point
@@ -91,33 +84,52 @@ fn spawn_runtime_blocks(
     }
 }
 
+// TODO
+// it runs but nothing spawns :(
+struct SpawnBlockEvent(Entity);
+
+// This is called by an event
+#[allow(dead_code)]
 fn spawn_block(
     commands: &mut Commands,
     materials: &mut ResMut<Assets<ColorMaterial>>,
-    spawn_position: &mut SpawnInfo,
-    color: Color,
+    mut spawn_event: EventReader<SpawnBlockEvent>,
+    mut spawn_query: Query<&mut SpawnInfo>,
 ) {
-    let location = spawn_position.spawn_location;
-    let direction = spawn_position.spawn_direction;
 
-    // set the positions spawned value to true
-    spawn_position.spawned = true;
+    let color = Color::rgb(0.2, 0.5, 1.0);
+    for event in spawn_event.iter() {
 
-    // TODO Respawn button
-    // TODO Give Exit Button Text on Screen
+        let entity: Entity = event.0;
 
-    commands
-        .spawn_bundle(SpriteBundle {
-            sprite: Sprite::new(Vec2::new(BLOCKSIZEX, BLOCKSIZEY)),
-            material: materials.add(color.into()),
-            transform: Transform::from_xyz(location.0 as f32, location.1 as f32, 1.0),
-            ..Default::default()
-        })
-        .insert(Block {
-            velocity: 300.0,
-            direction,
-        })
-        .insert(Collidable);
+        if let Ok(mut spawn_position) = spawn_query.get_mut(entity) {
+
+            let location = spawn_position.spawn_location;
+            let direction = spawn_position.spawn_direction;
+
+            // set the positions spawned value to true
+            spawn_position.spawned = true;
+
+            // TODO Respawn button
+            // TODO Give Exit Button Text on Screen
+
+            commands
+                .spawn_bundle(SpriteBundle {
+                    sprite: Sprite::new(Vec2::new(BLOCKSIZEX, BLOCKSIZEY)),
+                    material: materials.add(color.into()),
+                    transform: Transform::from_xyz(location.0 as f32, location.1 as f32, 1.0),
+                    ..Default::default()
+                })
+                .insert(Block {
+                    velocity: 300.0,
+                    direction,
+                })
+                .insert(Collidable);
+        } else {
+            // the entity does not have the components from the query
+            println!("not here")
+        }
+    }
 }
 
 // move the block by its own velocity
