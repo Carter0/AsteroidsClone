@@ -10,7 +10,7 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_startup_system(spawn_player.system())
+        app.add_startup_system(spawn_startup_player.system())
             .add_system(move_player.system())
             .add_system(player_collision_system.system());
     }
@@ -18,11 +18,16 @@ impl Plugin for PlayerPlugin {
 
 // The float value is the player movement speed in 'pixels/second'.
 pub struct Player {
-    velocity: f32,
-    teleport_distance: f32,
+    pub velocity: f32,
+    pub teleport_distance: f32,
 }
 
-fn spawn_player(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
+fn spawn_startup_player(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
+    spawn_player(&mut commands, &mut materials);
+}
+
+pub fn spawn_player(commands: &mut Commands,
+                    materials: &mut ResMut<Assets<ColorMaterial>>) {
     let sprite_size_x = 40.0;
     let sprite_size_y = 40.0;
 
@@ -108,7 +113,7 @@ fn player_collision_system(
     mut commands: Commands,
     mut player_query: Query<(Entity, &Sprite, &Transform), With<Player>>,
     collider_query: Query<&Transform, (With<Collidable>, Without<Player>)>,
-    mut score_query: Query<&mut Score>
+    mut score_query: Query<&mut Score>,
 ) {
     if let Ok((player_entity, sprite, player_transform)) = player_query.single_mut() {
         let player_size = sprite.size;

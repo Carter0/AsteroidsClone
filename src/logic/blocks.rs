@@ -27,7 +27,8 @@ impl Plugin for BlocksPlugin {
                     .with_run_criteria(FixedTimestep::step(BLOCK_SPAWN_TIMESTEP))
                     .with_system(spawn_runtime_blocks.system()),
             )
-            .add_system(move_blocks.system());
+            .add_system(move_blocks.system())
+            .add_system(spawn_block.system());
     }
 }
 
@@ -47,15 +48,15 @@ pub struct Block {
     direction: Direction,
 }
 
+pub struct SpawnBlockEvent(pub Entity);
+
 // Spawns starting blocks for the game
-// TODO my guess is that this
 fn spawn_starting_block(
     mut spawn_positions_query: Query<(Entity, With<SpawnInfo>)>,
     mut spawn_event: EventWriter<SpawnBlockEvent>,
 ) {
     let block_number = 6;
-    for (entity, boolean) in spawn_positions_query.iter_mut().take(block_number) {
-        println!("bool is {}", boolean);
+    for (entity, _boolean) in spawn_positions_query.iter_mut().take(block_number) {
         spawn_event.send(SpawnBlockEvent(entity))
     }
 }
@@ -84,19 +85,14 @@ fn spawn_runtime_blocks(
     }
 }
 
-// TODO
-// it runs but nothing spawns :(
-struct SpawnBlockEvent(Entity);
 
 // This is called by an event
-#[allow(dead_code)]
 fn spawn_block(
-    commands: &mut Commands,
-    materials: &mut ResMut<Assets<ColorMaterial>>,
+    mut commands: Commands,
+    mut materials: ResMut<Assets<ColorMaterial>>,
     mut spawn_event: EventReader<SpawnBlockEvent>,
     mut spawn_query: Query<&mut SpawnInfo>,
 ) {
-
     let color = Color::rgb(0.2, 0.5, 1.0);
     for event in spawn_event.iter() {
 
@@ -110,8 +106,7 @@ fn spawn_block(
             // set the positions spawned value to true
             spawn_position.spawned = true;
 
-            // TODO Respawn button
-            // TODO Give Exit Button Text on Screen
+            // TODO Give Exit Button and respawn button Text on Screen
 
             commands
                 .spawn_bundle(SpriteBundle {
