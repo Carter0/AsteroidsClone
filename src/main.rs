@@ -29,6 +29,7 @@ fn main() {
         .add_plugin(logic::blocks::BlocksPlugin)
         .add_plugin(logic::reset_game::ResetGamePlugin)
         .add_plugin(graphics::score::ScorePlugin)
+        .add_plugin(graphics::text::TextPlugin)
         .add_system(exit_on_esc_system.system())
         .run();
 }
