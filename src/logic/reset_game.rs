@@ -16,7 +16,7 @@ impl Plugin for ResetGamePlugin {
     }
 }
 
-struct ResetGameEvent;
+pub struct ResetGameEvent;
 
 fn send_reset_game_event(
     keyboard_input: Res<Input<KeyCode>>,
@@ -29,6 +29,7 @@ fn send_reset_game_event(
 
 fn reset_player(
     mut commands: Commands,
+    asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut player_query: Query<&mut Transform, With<Player>>,
     mut reset_game_event: EventReader<ResetGameEvent>,
@@ -42,7 +43,7 @@ fn reset_player(
         } else {
 
             // If the player is dead, spawn a new one
-            super::player::spawn_player(&mut commands, &mut materials)
+            super::player::spawn_player(&mut commands, &asset_server, &mut materials)
         }
     }
 }

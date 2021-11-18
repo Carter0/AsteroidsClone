@@ -4,6 +4,8 @@ use bevy::asset::AssetServer;
 use bevy::core::FixedTimestep;
 use bevy::prelude::*;
 
+use crate::logic::player::PlayerDeathEvent;
+
 // For SCORE_ACC_TIMESTEP, it's once every two seconds
 const SCORE_ACC_TIMESTEP: f64 = 1.0;
 
@@ -12,6 +14,7 @@ pub struct ScorePlugin;
 impl Plugin for ScorePlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_startup_system(render_score.system())
+            .add_system(stop_score_counter.system())
             .add_system_set(
                 SystemSet::new()
                     .with_run_criteria(FixedTimestep::step(SCORE_ACC_TIMESTEP))
@@ -23,6 +26,20 @@ impl Plugin for ScorePlugin {
 pub struct Score {
     pub value: i32,
     pub active: bool,
+}
+
+fn stop_score_counter(
+    mut reset_game_event: EventReader<PlayerDeathEvent>,
+    mut score_query: Query<&mut Score>,
+) {
+    for _event in reset_game_event.iter() {
+        // Stop accumulating the score
+        let mut score = score_query
+            .single_mut()
+            .expect("There should only be one score in the game.");
+
+        score.active = false;
+    }
 }
 
 // NOTE

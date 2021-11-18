@@ -1,6 +1,5 @@
 // PLAYER CODE
 
-use crate::graphics::score::Score;
 use crate::{Collidable, WINDOWHEIGHT, WINDOWWIDTH};
 
 use bevy::prelude::*;
@@ -10,7 +9,8 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_startup_system(spawn_startup_player.system())
+        app.add_event::<PlayerDeathEvent>()
+            .add_startup_system(spawn_startup_player.system())
             .add_system(move_player.system())
             .add_system(player_collision_system.system());
     }
@@ -22,18 +22,26 @@ pub struct Player {
     pub teleport_distance: f32,
 }
 
-fn spawn_startup_player(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
-    spawn_player(&mut commands, &mut materials);
+fn spawn_startup_player(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+) {
+    spawn_player(&mut commands, &asset_server, &mut materials);
 }
 
-pub fn spawn_player(commands: &mut Commands,
-                    materials: &mut ResMut<Assets<ColorMaterial>>) {
+pub fn spawn_player(
+    commands: &mut Commands,
+    asset_server: &Res<AssetServer>,
+    materials: &mut ResMut<Assets<ColorMaterial>>,
+) {
     let sprite_size_x = 40.0;
     let sprite_size_y = 40.0;
+    let texture_handle = asset_server.load("textures/block_3.png");
 
     commands
         .spawn_bundle(SpriteBundle {
-            material: materials.add(Color::rgb(0.5, 0.5, 1.0).into()),
+            material: materials.add(texture_handle.into()),
             transform: Transform::from_xyz(0.0, 0.0, 1.0),
             sprite: Sprite::new(Vec2::new(sprite_size_x, sprite_size_y)),
             ..Default::default()
@@ -108,12 +116,14 @@ fn move_player(
     }
 }
 
+pub struct PlayerDeathEvent;
+
 // simple, player collides with block system
 fn player_collision_system(
     mut commands: Commands,
     mut player_query: Query<(Entity, &Sprite, &Transform), With<Player>>,
     collider_query: Query<&Transform, (With<Collidable>, Without<Player>)>,
-    mut score_query: Query<&mut Score>,
+    mut player_death_event: EventWriter<PlayerDeathEvent>,
 ) {
     if let Ok((player_entity, sprite, player_transform)) = player_query.single_mut() {
         let player_size = sprite.size;
@@ -130,12 +140,7 @@ fn player_collision_system(
                 // Remove the player if they collide with a block
                 commands.entity(player_entity).despawn();
 
-                // Stop accumulating the score
-                let mut score = score_query
-                    .single_mut()
-                    .expect("There should only be one score in the game.");
-
-                score.active = false;
+                player_death_event.send(PlayerDeathEvent)
             }
         }
     }

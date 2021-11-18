@@ -89,16 +89,19 @@ fn spawn_runtime_blocks(
 // This is called by an event
 fn spawn_block(
     mut commands: Commands,
+    asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut spawn_event: EventReader<SpawnBlockEvent>,
     mut spawn_query: Query<&mut SpawnInfo>,
 ) {
-    let color = Color::rgb(0.2, 0.5, 1.0);
     for event in spawn_event.iter() {
 
         let entity: Entity = event.0;
 
         if let Ok(mut spawn_position) = spawn_query.get_mut(entity) {
+
+            let texture_handle = asset_server.load("textures/block_1.png");
+
 
             let location = spawn_position.spawn_location;
             let direction = spawn_position.spawn_direction;
@@ -106,12 +109,10 @@ fn spawn_block(
             // set the positions spawned value to true
             spawn_position.spawned = true;
 
-            // TODO Give Exit Button and respawn button Text on Screen
-
             commands
                 .spawn_bundle(SpriteBundle {
                     sprite: Sprite::new(Vec2::new(BLOCKSIZEX, BLOCKSIZEY)),
-                    material: materials.add(color.into()),
+                    material: materials.add(texture_handle.into()),
                     transform: Transform::from_xyz(location.0 as f32, location.1 as f32, 1.0),
                     ..Default::default()
                 })
