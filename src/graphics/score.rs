@@ -51,7 +51,7 @@ fn render_score(mut commands: Commands, asset_server: Res<AssetServer>) {
         style: TextStyle {
             font: asset_server.load("fonts/Roboto-Thin.ttf"),
             font_size: 60.0,
-            color: Color::BLACK,
+            color: Color::rgb(0.9, 0.9, 0.9),
         },
     };
 
