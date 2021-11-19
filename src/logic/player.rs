@@ -140,7 +140,7 @@ fn player_collision_system(
                 // Remove the player if they collide with a block
                 commands.entity(player_entity).despawn();
 
-                player_death_event.send(PlayerDeathEvent)
+                player_death_event.send(PlayerDeathEvent);
             }
         }
     }
