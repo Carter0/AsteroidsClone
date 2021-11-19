@@ -2,16 +2,18 @@
 
 use bevy::prelude::*;
 
-use crate::logic::player::PlayerDeathEvent;
-
+use crate::logic::{player::PlayerDeathEvent, reset_game::ResetGameEvent};
 
 pub struct TextPlugin;
 
 impl Plugin for TextPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_system(game_over_text.system());
+        app.add_system(game_over_text.system())
+            .add_system(clear_game_over_text.system());
     }
 }
+
+struct GameOverText;
 
 fn game_over_text(
     mut commands: Commands,
@@ -32,21 +34,33 @@ fn game_over_text(
                 ..Default::default()
             })
             .with_children(|parent| {
-                parent.spawn_bundle(TextBundle {
-                    text: Text::with_section(
-                        "Press R to reset the game. Press ESC to quit.",
-                        TextStyle {
-                            font: asset_server.load("fonts/Roboto-thin.ttf"),
-                            font_size: 40.0,
-                            color: Color::rgb(0.9, 0.9, 0.9),
-                        },
-                        Default::default(),
-                    ),
-                    ..Default::default()
-                });
-            });
+                parent
+                    .spawn_bundle(TextBundle {
+                        text: Text::with_section(
+                            "Press R to reset the game. Press ESC to quit.",
+                            TextStyle {
+                                font: asset_server.load("fonts/Roboto-thin.ttf"),
+                                font_size: 40.0,
+                                color: Color::rgb(0.9, 0.9, 0.9),
+                            },
+                            Default::default(),
+                        ),
+                        ..Default::default()
+                    })
+                    .insert(GameOverText);
+            })
+            .insert(GameOverText);
     }
 }
 
-// TODO clear the text if the player hits reset
-// fn clear_game_over_text(){}
+fn clear_game_over_text(
+    mut commands: Commands,
+    mut reset_game_event: EventReader<ResetGameEvent>,
+    game_over_text_query: Query<Entity, With<GameOverText>>,
+) {
+    for _event in reset_game_event.iter() {
+        for entity in game_over_text_query.iter() {
+            commands.entity(entity).despawn();
+        }
+    }
+}
