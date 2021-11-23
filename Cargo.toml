@@ -5,5 +5,30 @@ authors = ["carter <weinbergcarter@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-bevy = "0.5"
 rand = "*"
+
+[dependencies.bevy]
+version = "0.5"
+default-features = false
+# These are the remaining default features other than `bevy_audio` and `mp3`
+features = [
+  "bevy_dynamic_plugin",
+  "render",
+  "bevy_wgpu",
+  "bevy_winit",
+  "bevy_gilrs",
+  "bevy_gltf",
+  "png",
+  "hdr",
+  "x11"
+]
+
+[dependencies.bevy_kira_audio]
+version = "0.6.0"
+# `ogg` format support is enabled by default, disable if you don't want it
+default-features = false
+# enable the features you care about
+features = [
+  "wav",
+  "mp3",
+]

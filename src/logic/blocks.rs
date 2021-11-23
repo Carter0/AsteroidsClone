@@ -71,20 +71,17 @@ fn spawn_runtime_blocks(
 
     let spawn_entity: Option<Entity> = spawn_positions_query
         .iter()
-        .filter(|(_entity, spawn_position)| !spawn_position.spawned )
+        .filter(|(_entity, spawn_position)| !spawn_position.spawned)
         .map(|tuple| tuple.0)
         .choose(&mut rng);
 
     match spawn_entity {
-        Some(entity) => {
-            spawn_event.send(SpawnBlockEvent(entity))
-        }
+        Some(entity) => spawn_event.send(SpawnBlockEvent(entity)),
         // NOTE
         // You could do the swap around stuff here at some point
         None => println!("empty"),
     }
 }
-
 
 // This is called by an event
 fn spawn_block(
@@ -95,13 +92,10 @@ fn spawn_block(
     mut spawn_query: Query<&mut SpawnInfo>,
 ) {
     for event in spawn_event.iter() {
-
         let entity: Entity = event.0;
 
         if let Ok(mut spawn_position) = spawn_query.get_mut(entity) {
-
             let texture_handle = asset_server.load("textures/block_1.png");
-
 
             let location = spawn_position.spawn_location;
             let direction = spawn_position.spawn_direction;

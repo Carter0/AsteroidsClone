@@ -33,15 +33,13 @@ fn reset_player(
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut player_query: Query<&mut Transform, With<Player>>,
     mut reset_game_event: EventReader<ResetGameEvent>,
-){
-
+) {
     for _event in reset_game_event.iter() {
         // Reset player position to 0,0
         if let Ok(mut transform) = player_query.single_mut() {
             transform.translation.x = 0.0;
             transform.translation.y = 0.0;
         } else {
-
             // If the player is dead, spawn a new one
             super::player::spawn_player(&mut commands, &asset_server, &mut materials)
         }

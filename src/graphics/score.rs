@@ -82,7 +82,10 @@ fn render_score(mut commands: Commands, asset_server: Res<AssetServer>) {
             text,
             ..Default::default()
         })
-        .insert(Score{value: 0, active: true});
+        .insert(Score {
+            value: 0,
+            active: true,
+        });
 }
 
 fn score_update_system(mut score_query: Query<(&mut Score, &mut Text)>) {
